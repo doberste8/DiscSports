@@ -28,7 +28,9 @@ export default {
   Point(id: $pId) {
     players {
       id
-      lastName
+    }
+    scored_by {
+      id
     }
     game {
       id
@@ -79,6 +81,21 @@ export default {
       query: `
       mutation ($pointId: Float!, $teamId: Int!) {
         AddTeamPoints(teamid: $teamId, pointid: $pointId) {
+          id
+          name
+          points {
+            id
+          }
+        }
+      }`,
+      variables: { pointId, teamId },
+    });
+  },
+  removePoint(pointId, teamId) {
+    return api().post('/graphql', {
+      query: `
+      mutation ($pointId: Float!, $teamId: Int!) {
+        RemoveTeamPoints(teamid: $teamId, pointid: $pointId) {
           id
           name
           points {

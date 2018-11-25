@@ -1,7 +1,7 @@
 <!-- client/src/components/GameHistory.vue -->
 
 <template>
-  <div class="game-history">
+  <div ref="game-history" class="game-history">
     <button type="button"
       class="btn btn-secondary btn-sm"
       @click="backToGames">Back to Games</button>
@@ -18,10 +18,10 @@
         </div>
       </div>
       <ul class="list-group">
-        <li v-for="(point, index) in points" :key="point.id" class="list-group-item">
+        <li v-for="(point, index) in points" @click="routeToPoint(0, point.id)" :key="point.id" class="list-group-item">
           <p class="d-flex justify-content-start align-items-center">
-          <span :style="{color: point.scored_by.color}"><span class="name">{{ point.scored_by.name }}</span> {{ holds[index] ? 'Hold' : 'Break' }}</span>
-          <span class="badge badge-pill ml-auto"
+          <span v-if="point.scored_by" :style="{color: point.scored_by.color}"><span class="name">{{ point.scored_by.name }}</span> {{ holds[index] ? 'Hold' : 'Break' }}</span>
+          <span v-if="point.scored_by" class="badge badge-pill ml-auto"
           :class="{'badge-primary': holds[index], 'badge-secondary': !holds[index]}">
             <span v-for="(value, key, index) in score[index]" :key="key">
               <span v-if="index === 0">{{ key }}&nbsp;</span>
@@ -39,7 +39,7 @@
           <span v-if="index+1 < teams.length">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
           </small>
         </li>
-        <li class="list-group-item" @click="routeToPoint(gameId + (points.length+1)/100)">+ (new point)</li>
+        <li class="list-group-item" @click="routeToPoint(1, gameId + (points.length+1)/100)">+ (new point)</li>
       </ul>
     </div>
   </div>
@@ -72,7 +72,11 @@ export default {
   computed: {
     holds: function calcHolds() {
       let h = [];
-      this.points.forEach((point, index) => {
+      let pt = [];
+      this.points.forEach(p => {
+          if (p.scored_by) pt.push(p);
+          });
+     pt.forEach((point, index) => {
         const defenseId = index === 0 ? this.pullingToStart : this.points[index-1].scored_by.id;
         h.push(defenseId === point.scored_by.id ? 0 : 1);
       });
@@ -83,7 +87,11 @@ export default {
       let acc = {};
       acc[this.teams[0].name] = 0;
       acc[this.teams[1].name] = 0;
-      this.points.forEach((point) => {
+      let pt = [];
+      this.points.forEach(p => {
+          if (p.scored_by) pt.push(p);
+          });
+      pt.forEach((point) => {
         if (typeof acc[point.scored_by.name] === 'undefined') {
           acc[point.scored_by.name] = 1;
         } else {
@@ -99,6 +107,7 @@ export default {
   },
   mounted() {
     this.getGameHistory(this.gameId);
+    this.scrollToBottom(document.getElementById(this.$refs.game-history));
   },
   methods: {
     backToGames() {
@@ -106,9 +115,12 @@ export default {
         name: 'Games',
       });
     },
-    async routeToPoint(pointId) {
+    scrollToBottom(elem) {
+      elem.scrollTop = elem.scrollHeight;
+    },
+    async routeToPoint(create, pointId) {
       try {
-        await gStore.createPoint(pointId, this.gameId, moment().utc().format());
+        if (create) await gStore.createPoint(pointId, this.gameId, moment().utc().format());
         this.$router.push({
           name: 'Point',
           params: {
@@ -126,10 +138,7 @@ export default {
         this.teams = response.data.data.Game[0].teams;
         const pullingToStart = response.data.data.Game[0].pullingId;
         this.pullingToStart = pullingToStart ? pullingToStart : 0;
-        let points = [];
-        response.data.data.Game[0].points.forEach(p => {
-          if (p.scored_by) points.push(p);
-          });
+        let points = response.data.data.Game[0].points;
         points.sort((a, b) => a.id - b.id);
         points = points.map((point) => {
           let t = {};

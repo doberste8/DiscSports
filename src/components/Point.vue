@@ -11,7 +11,9 @@
     <div v-for="team in gameData.teams" :key="team.id" class="text-center tb-margin">
       <h2 :style="{color: team.color}">{{ team.name }}</h2>
       <div>
-        <toggle-button v-for="player in team.roster" :key="player.id" :label="player.firstName + ' ' + player.lastName"
+        <toggle-button v-for="player in team.roster" :key="player.id"
+        :initialPressed="team.playing.indexOf(player.id) >= 0"
+        :label="player.firstName + ' ' + player.lastName"
           @click.native="enroll(team, player.id)"
           ref="btns"
           :disabled="team.playing.length >= 5 && team.playing.indexOf(player.id) === -1">
@@ -21,7 +23,8 @@
     <div class="text-center tb-margin">
       <h2>Which Team Scored?</h2>
       <button v-for="team in gameData.teams" :key="team.id"
-        class="btn btn-primary" @click="recordPoint(team.id)">
+        class="btn btn-primary" @click="recordPoint(team.id)"
+        :class="{toggled: team.id === scored_by.id}">
         <h2 class="name name-lg" :style="{color: team.color}">{{ team.name }}</h2>
       </button>
     </div>
@@ -31,6 +34,7 @@
 <script>
 import gStore from '@/services/gStore';
 import ToggleButton from '@/components/base/ToggleButton';
+import moment from '../../node_modules/moment';
 
 export default {
   name: 'Point',
@@ -67,6 +71,7 @@ export default {
   data() {
     return {
       gameData: {},
+      scored_by: {},
     };
   },
   mounted() {
@@ -95,14 +100,23 @@ export default {
     async getRosters(pointId) {
       try {
         const response = await gStore.fetchRosters(pointId);
+        this.scored_by = response.data.data.Point[0].scored_by ? response.data.data.Point[0].scored_by : -1;
         this.gameData = response.data.data.Point[0].game;
+        this.gameData.teams[0].playing = [];
+        this.gameData.teams[1].playing = [];
+        const players = response.data.data.Point[0].players.map(p => p.id);
+        players.forEach(p => {
+          if (this.gameData.teams[0].roster.map(x => x.id).indexOf(p) >= 0) {
+            this.gameData.teams[0].playing.push(p);
+          } else {
+            this.gameData.teams[1].playing.push(p);
+          }
+        });
         let points = [];
         this.gameData.points.forEach(p => {
           if (p.scored_by) points.push(p);
           });
         this.gameData.points = points;
-        this.gameData.teams[0].playing = [];
-        this.gameData.teams[1].playing = [];
         this.gameData.teams[0].roster.sort((a, b) => {
           if (a.gender < b.gender) return -1;
           if (a.gender > b.gender) return 1;
@@ -127,9 +141,25 @@ export default {
     },
     async recordPoint(teamId) {
       try {
-        await gStore.updatePoint(this.pointId, teamId);
-        this.$refs.btns.forEach(i => i.reset());
-        this.getRosters(this.gameId);
+        if (this.scored_by.id) {
+          if (teamId === this.scored_by.id) {
+          } else {
+            await gStore.removePoint(this.pointId, this.scored_by.id);
+            await gStore.updatePoint(this.pointId, teamId);
+          }
+        } else {
+          await gStore.updatePoint(this.pointId, teamId);
+        }
+        // this.$refs.btns.forEach(i => i.reset());
+        const gameId = this.gameId;
+        // const newPointId = this.pointId + .01;
+        // await gStore.createPoint(newPointId, this.gameId, moment().utc().format());
+        this.$router.push({
+          name: 'GameHistory',
+          params: {
+            gameId,
+          },
+        });
       } catch (e) {
         // console.error(e);
       }

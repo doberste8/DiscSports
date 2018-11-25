@@ -18,11 +18,18 @@ export default {
       type: String,
       required: true,
     },
+    initialPressed: {
+      type: Boolean,
+      required: false,
+    },
   },
   data() {
     return {
       pressed: false,
     };
+  },
+  mounted() {
+    this.pressed = this.initialPressed;
   },
   methods: {
     toggle() {
