@@ -2,4 +2,4 @@
 
 import axios from 'axios';
 
-export default() => axios.create({ baseURL: 'http://mevn-template-server-doberste8.c9users.io' });
+export default() => axios.create({ baseURL: 'http://disc-sports.bid:3000' });
