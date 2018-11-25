@@ -31,15 +31,13 @@
 <script>
 import gStore from '@/services/gStore';
 import ToggleButton from '@/components/base/ToggleButton';
-import moment from '../../node_modules/moment';
 
 export default {
   name: 'Point',
   props: {
-    gameId: {
+    pointId: {
       type: Number,
       required: true,
-      default: () => 881417,
     },
   },
   components: {
@@ -62,6 +60,9 @@ export default {
       }
       return v;
     },
+    gameId: function parseGameId() {
+      return Math.floor(this.pointId);
+    }
   },
   data() {
     return {
@@ -69,13 +70,18 @@ export default {
     };
   },
   mounted() {
-    this.getRosters(this.gameId);
+    this.getRosters(this.pointId);
   },
   methods: {
     enroll(team, pId) {
       const i = team.playing.indexOf(pId);
-      if (i === -1) team.playing.push(pId);
-      else team.playing.splice(i, 1);
+      if (i === -1) {
+        team.playing.push(pId);
+        gStore.enrollPoint(this.pointId, pId);
+      } else {
+        team.playing.splice(i, 1);
+        gStore.unEnrollPoint(this.pointId, pId);
+      }
       this.$forceUpdate();
     },
     backToGames(gameId) {
@@ -86,10 +92,15 @@ export default {
         },
       });
     },
-    async getRosters(gameId) {
+    async getRosters(pointId) {
       try {
-        const response = await gStore.fetchRosters(gameId);
-        this.gameData = response.data.data.Game[0];
+        const response = await gStore.fetchRosters(pointId);
+        this.gameData = response.data.data.Point[0].game;
+        let points = [];
+        this.gameData.points.forEach(p => {
+          if (p.scored_by) points.push(p);
+          });
+        this.gameData.points = points;
         this.gameData.teams[0].playing = [];
         this.gameData.teams[1].playing = [];
         this.gameData.teams[0].roster.sort((a, b) => {
@@ -115,23 +126,14 @@ export default {
       }
     },
     async recordPoint(teamId) {
-      const pointId = this.gameId + (this.gameData.points.length+1)/100;
       try {
-        await gStore.postPoint(pointId, this.gameId, teamId, moment().utc().format());
+        await gStore.updatePoint(this.pointId, teamId);
         this.$refs.btns.forEach(i => i.reset());
         this.getRosters(this.gameId);
-        this.enrollP(pointId);
       } catch (e) {
         // console.error(e);
       }
     },
-    enrollP(pointId) {
-      this.gameData.teams.forEach((el) => {
-        while (el.playing.length > 0) {
-          gStore.enrollPoint(pointId, el.playing.pop());
-        }
-      });
-    }
   },
 };
 </script>

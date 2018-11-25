@@ -20,15 +20,15 @@ export default new Router({
       component: Games,
     },
     {
-      path: '/:gameId/point',
+      path: '/point/:pointId',
       name: 'Point',
       component: Point,
       props: (route) => {
-        const gameId = Number.parseInt(route.params.gameId, 10);
-        if (Number.isNaN(gameId)) {
+        const pointId = Number.parseFloat(route.params.pointId, 10);
+        if (Number.isNaN(pointId)) {
           return 0;
         }
-        return { gameId };
+        return { pointId };
       },
     },
     {

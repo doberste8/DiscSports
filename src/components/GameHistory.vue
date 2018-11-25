@@ -39,7 +39,7 @@
           <span v-if="index+1 < teams.length">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
           </small>
         </li>
-        <li class="list-group-item" @click="routeToPoint(gameId)">+ (new point)</li>
+        <li class="list-group-item" @click="routeToPoint(gameId + (points.length+1)/100)">+ (new point)</li>
       </ul>
     </div>
   </div>
@@ -48,6 +48,7 @@
 <script>
 import gStore from '@/services/gStore';
 import ToggleButton from '@/components/base/ToggleButton';
+import moment from '../../node_modules/moment';
 
 export default {
   name: 'GameHistory',
@@ -105,13 +106,19 @@ export default {
         name: 'Games',
       });
     },
-    routeToPoint(gameId) {
-      this.$router.push({
-        name: 'Point',
-        params: {
-          gameId,
-        },
-      });
+    async routeToPoint(pointId) {
+      try {
+        await gStore.createPoint(pointId, this.gameId, moment().utc().format());
+        this.$router.push({
+          name: 'Point',
+          params: {
+            pointId,
+          },
+        });
+      } catch (e) {
+        // console.error(e);
+      }
+      
     },
     async getGameHistory(gameId) {
       try {
@@ -119,7 +126,10 @@ export default {
         this.teams = response.data.data.Game[0].teams;
         const pullingToStart = response.data.data.Game[0].pullingId;
         this.pullingToStart = pullingToStart ? pullingToStart : 0;
-        let points = response.data.data.Game[0].points;
+        let points = [];
+        response.data.data.Game[0].points.forEach(p => {
+          if (p.scored_by) points.push(p);
+          });
         points.sort((a, b) => a.id - b.id);
         points = points.map((point) => {
           let t = {};

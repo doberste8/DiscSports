@@ -21,39 +21,45 @@ export default {
       }`,
     });
   },
-  fetchRosters(gameId) {
+  fetchRosters(pointId) {
     return api().post('/graphql', {
       query: `
-      query ($gId: Int) {
-        Game(id: $gId) {
+      query ($pId: Float!) {
+  Point(id: $pId) {
+    players {
+      id
+      lastName
+    }
+    game {
+      id
+      teams {
+        id
+        name
+        color
+        roster {
           id
-          teams {
-            id
-            name
-            color
-            roster {
-              id
-              firstName
-              lastName
-              gender
-            }
-          }
-          points {
-            id
-            scored_by {
-              id
-              name
-            }
-          }
+          firstName
+          lastName
+          gender
         }
-      }`,
-      variables: { gId: gameId },
+      }
+      points {
+        id
+        scored_by {
+          id
+          name
+        }
+      }
+    }
+  }
+}`,
+      variables: { pId: pointId },
     });
   },
-  postPoint(pointId, gameId, teamId, time) {
+  createPoint(pointId, gameId, time) {
     return api().post('/graphql', {
       query: `
-      mutation ($pointId: Float!, $gameId: Int!, $teamId: Int!, $time: String) {
+      mutation ($pointId: Float!, $gameId: Int!, $time: String) {
         CreatePoint(id: $pointId, time: $time) {
           id
           time
@@ -64,6 +70,14 @@ export default {
             id
           }
         }
+      }`,
+      variables: { pointId, gameId, time },
+    });
+  },
+  updatePoint(pointId, teamId) {
+    return api().post('/graphql', {
+      query: `
+      mutation ($pointId: Float!, $teamId: Int!) {
         AddTeamPoints(teamid: $teamId, pointid: $pointId) {
           id
           name
@@ -72,7 +86,7 @@ export default {
           }
         }
       }`,
-      variables: { pointId, gameId, teamId, time },
+      variables: { pointId, teamId },
     });
   },
   enrollPoint(pointId, playerId) {
@@ -80,6 +94,20 @@ export default {
       query: `
       mutation ($pointId: Float!, $playerId: Int!) {
         AddPlayerPoints(playerid: $playerId, pointid: $pointId) {
+          id
+          points {
+            id
+          }
+        }
+      }`,
+      variables: { pointId, playerId },
+    });
+  },
+  unEnrollPoint(pointId, playerId) {
+    return api().post('/graphql', {
+      query: `
+      mutation ($pointId: Float!, $playerId: Int!) {
+        RemovePlayerPoints(playerid: $playerId, pointid: $pointId) {
           id
           points {
             id
