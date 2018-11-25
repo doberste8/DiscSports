@@ -120,15 +120,18 @@ export default {
         await gStore.postPoint(pointId, this.gameId, teamId, moment().utc().format());
         this.$refs.btns.forEach(i => i.reset());
         this.getRosters(this.gameId);
-        this.gameData.teams.forEach((el) => {
-          while (el.playing.length > 0) {
-            gStore.enrollPoint(pointId, el.playing.pop());
-          }
-        });
+        this.enrollP(pointId);
       } catch (e) {
         // console.error(e);
       }
     },
+    enrollP(pointId) {
+      this.gameData.teams.forEach((el) => {
+        while (el.playing.length > 0) {
+          gStore.enrollPoint(pointId, el.playing.pop());
+        }
+      });
+    }
   },
 };
 </script>
