@@ -10,10 +10,10 @@ Vue.use(Router);
 export default new Router({
   mode: 'history',
   routes: [
-    {
-      path: '/',
-      redirect: { name: 'Games' },
-    },
+    // {
+    //   path: '/',
+    //   redirect: { name: 'Games' },
+    // },
     {
       path: '/games',
       name: 'Games',
@@ -32,7 +32,7 @@ export default new Router({
       },
     },
     {
-      path: '/:gameId/game-history',
+      path: '/game/:gameId',
       name: 'GameHistory',
       component: GameHistory,
       props: (route) => {

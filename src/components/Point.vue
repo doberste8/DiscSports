@@ -150,10 +150,7 @@ export default {
         } else {
           await gStore.updatePoint(this.pointId, teamId);
         }
-        // this.$refs.btns.forEach(i => i.reset());
         const gameId = this.gameId;
-        // const newPointId = this.pointId + .01;
-        // await gStore.createPoint(newPointId, this.gameId, moment().utc().format());
         this.$router.push({
           name: 'GameHistory',
           params: {
